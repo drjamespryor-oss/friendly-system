@@ -1,0 +1,120 @@
+import { strict as assert } from 'assert';
+
+/**
+ * ============================================================================
+ * ARCHITECTURE OVERVIEW: UNIT TESTING THE FEDERATED PLATFORM INTERFACE
+ * ============================================================================
+ * 
+ * [ Unit Test Execution Context ]
+ *                |
+ *     (Injects Mock Implementation)
+ *                |
+ * [ UrlLauncherPlatformInterface (Abstract Contract) ]
+ *                |
+ * [ MockUrlLauncherPlatform (Verified Subject) ]
+ */
+
+// 1. Define the formal Platform Interface contract
+abstract class UrlLauncherPlatformInterface {
+  private static _instance: UrlLauncherPlatformInterface;
+
+  public static get instance(): UrlLauncherPlatformInterface {
+    if (!UrlLauncherPlatformInterface._instance) {
+      throw new Error("Platform interface instance not registered.");
+    }
+    return UrlLauncherPlatformInterface._instance;
+  }
+
+  public static set instance(instance: UrlLauncherPlatformInterface) {
+    UrlLauncherPlatformInterface._instance = instance;
+  }
+
+  // Abstract methods every platform implementation must implement
+  public abstract canLaunch(url: string): Promise<boolean>;
+  public abstract launch(url: string, useInAppWebView: boolean): Promise<boolean>;
+}
+
+// 2. Concrete Mock Implementation specifically designed for unit testing
+class MockUrlLauncherPlatform extends UrlLauncherPlatformInterface {
+  // State tracking flags for test verification
+  public passedUrl: string | null = null;
+  public passedInAppFlag: boolean | null = null;
+  
+  // Stubs configured by the test setup
+  public canLaunchReturnValue: boolean = true;
+  public launchReturnValue: boolean = true;
+
+  public async canLaunch(url: string): Promise<boolean> {
+    this.passedUrl = url;
+    return this.canLaunchReturnValue;
+  }
+
+  public async launch(url: string, useInAppWebView: boolean): Promise<boolean> {
+    this.passedUrl = url;
+    this.passedInAppFlag = useInAppWebView;
+    return this.launchReturnValue;
+  }
+}
+
+// 3. App-Facing API Wrapper class that uses the platform interface
+class UrlLauncherAppFacingAPI {
+  public async openTickerWebsite(symbol: string): Promise<boolean> {
+    const targetUrl = `https://example.com{symbol}`;
+    
+    // Always check platform capabilities before invoking native methods
+    const isSupported = await UrlLauncherPlatformInterface.instance.canLaunch(targetUrl);
+    if (!isSupported) {
+      return false;
+    }
+
+    return await UrlLauncherPlatformInterface.instance.launch(targetUrl, true);
+  }
+}
+
+// 4. Automated Unit Test Suite Execution Block
+async function runUnitTests() {
+  console.log("=== Launching Platform Interface Unit Tests ===\n");
+
+  // Test Case 1: Verifying correct configuration payload passing across the bridge
+  try {
+    const mockPlatform = new MockUrlLauncherPlatform();
+    UrlLauncherPlatformInterface.instance = mockPlatform; // Inject mock into static registry
+
+    const appFacingAPI = new UrlLauncherAppFacingAPI();
+    
+    // Act
+    const result = await appFacingAPI.openTickerWebsite("GM");
+
+    // Assert
+    assert.equal(result, true, "Should return true on successful platform execution");
+    assert.equal(mockPlatform.passedUrl, "https://example.com", "The target URL was incorrectly modified or missing");
+    assert.equal(mockPlatform.passedInAppFlag, true, "In-app WebView flag was not correctly applied");
+    
+    console.log("✅ Test Case 1 Passed: Valid payload arguments properly passed to the platform interface.");
+  } catch (error: any) {
+    console.error("❌ Test Case 1 Failed:", error.message);
+  }
+
+  console.log("\n----------------------------------------------------------------------");
+
+  // Test Case 2: Verifying behavior when the platform indicates the link cannot be handled
+  try {
+    const mockPlatform = new MockUrlLauncherPlatform();
+    mockPlatform.canLaunchReturnValue = false; // Stub failure mode
+    UrlLauncherPlatformInterface.instance = mockPlatform;
+
+    const appFacingAPI = new UrlLauncherAppFacingAPI();
+
+    // Act
+    const result = await appFacingAPI.openTickerWebsite("INVALID");
+
+    // Assert
+    assert.equal(result, false, "Should abort early and return false if platform cannot handle the URL");
+    console.log("✅ Test Case 2 Passed: Pre-flight check successfully intercepts execution upon platform restriction.");
+  } catch (error: any) {
+    console.error("❌ Test Case 2 Failed:", error.message);
+  }
+}
+
+// Fire the validation suite
+runUnitTests();
