@@ -1,0 +1,88 @@
+// Define interfaces for tracking historical stock performance
+interface StockPosition {
+  symbol: string;
+  sharesPurchased: number;
+  purchasePrice: number;
+  currentPrice: number;
+}
+
+// Main class to track Turtle and Flora's portfolio evolution
+class WestingPortfolioManager {
+  private initialStake: number = 10000;
+  private currentCash: number = 10000;
+  private positions: StockPosition[] = [];
+
+  constructor() {
+    this.simulateInitialClueTrades();
+    this.simulateStrategicPivot();
+  }
+
+  // 1. The Initial Period: Trading based on raw clues (resulting in paper losses)
+  private simulateInitialClueTrades(): void {
+    // Initial clue interpretations: SEA, MOUNTAIN, AM, O
+    const initialTrades: StockPosition[] = [
+      { symbol: "SEA", sharesPurchased: 200, purchasePrice: 15.25, currentPrice: 8.50 },
+      { symbol: "MOUNTAIN", sharesPurchased: 100, purchasePrice: 25.00, currentPrice: 19.00 },
+      { symbol: "AM", sharesPurchased: 150, purchasePrice: 19.25, currentPrice: 15.00 },
+      { symbol: "O", sharesPurchased: 50, purchasePrice: 30.00, currentPrice: 23.00 }
+    ];
+
+    // Deduct purchase costs from starting cash
+    initialTrades.forEach(trade => {
+      this.currentCash -= (trade.sharesPurchased * trade.purchasePrice);
+      this.positions.push(trade);
+    });
+  }
+
+  // 2. The Strategic Pivot: Liquidating losses and aggressively buying WPP
+  private simulateStrategicPivot(): void {
+    // Sell all losing positions at current market lows to recoup remaining cash
+    this.positions.forEach(position => {
+      const recoveryValue = position.sharesPurchased * position.currentPrice;
+      this.currentCash += recoveryValue;
+    });
+    this.positions = []; // Portfolio is now clear
+
+    // Turtle puts all combined remaining cash (~$7,000) directly into Westing Paper Products (WPP)
+    const wppPurchasePrice = 35.00;
+    const wppFinalPrice = 57.9375; // Reflects the surge driven by market chaos
+    const sharesToBuy = Math.floor(this.currentCash / wppPurchasePrice);
+    
+    // Adjust cash after buying WPP shares
+    this.currentCash -= (sharesToBuy * wppPurchasePrice);
+
+    this.positions.push({
+      symbol: "WPP",
+      sharesPurchased: sharesToBuy,
+      purchasePrice: wppPurchasePrice,
+      currentPrice: wppFinalPrice
+    });
+  }
+
+  // Calculate and display the final performance breakdown
+  public printFinancialReport(): void {
+    console.log(`=== Turtle Wexler & Flora Baumbach Portfolio Audit ===`);
+    console.log(`Initial Stake        : $${this.initialStake.toFixed(2)}`);
+    
+    // Compute ending value of open positions plus any leftover cash
+    const totalPositionsValue = this.positions.reduce((total, pos) => {
+      return total + (pos.sharesPurchased * pos.currentPrice);
+    }, 0);
+    
+    const finalPortfolioValue = totalPositionsValue + this.currentCash;
+    const netProfit = finalPortfolioValue - this.initialStake;
+
+    console.log(`Final Portfolio Value: $${finalPortfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    console.log(`Total Net Profit     : $${netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    console.log(`-----------------------------------------------------`);
+    console.log(`Current Active Holdings:`);
+    
+    this.positions.forEach(pos => {
+      console.log(`- ${pos.symbol}: ${pos.sharesPurchased} shares bought at $${pos.purchasePrice.toFixed(2)} -> Now at $${pos.currentPrice.toFixed(4)}`);
+    });
+  }
+}
+
+// Run the portfolio execution
+const portfolioTracker = new WestingPortfolioManager();
+portfolioTracker.printFinancialReport();
