@@ -1,0 +1,57 @@
+// packages/westing_ticker/src/westing_ticker.ts
+import { WestingTickerPlatformInterface, TickerTapePayload } from "westing_ticker_platform_interface";
+
+export class WestingTickerApp {
+  private balance: number = 10000.00;
+  private holdings: Map<string, { shares: number; totalCost: number }> = new Map();
+
+  /**
+   * Initializes the native telemetry bridge channel connection
+   */
+  public async bootSystem(): Promise<boolean> {
+    console.log("📟 [App Layer]: Initiating ticker telegraph line connection link...");
+    try {
+      return await WestingTickerPlatformInterface.instance.startTickerConnection();
+    } catch (error) {
+      console.error("📟 [App Layer]: Hard fault tracking line:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Subscribes to the native platform stream and acts instantly on crossing ticks
+   */
+  public async monitorLiveStock(symbol: string, autoPivotToWpp: boolean = false): Promise<void> {
+    console.log(`📟 [App Layer]: Spawning tracking hook for security target: [${symbol}]`);
+    
+    const tickerStream = WestingTickerPlatformInterface.instance.streamTickerSymbol(symbol);
+
+    for await (const tick of tickerStream) {
+      const transactionValue = tick.shares * tick.price;
+      console.log(`📡 [Live Tape crossing]: ${tick.shares} shares of ${tick.symbol} at $${tick.price.toFixed(2)} (Value: $${transactionValue.toLocaleString()})`);
+
+      // If tracking our owned stock drop, manage portfolio pivot logic cascades
+      if (autoPivotToWpp && tick.symbol === "SEA" && tick.price <= 8.50) {
+        this.triggerEmergencyWppPivot();
+        break; // Sever this specific stream connection loop post-liquidation
+      }
+    }
+  }
+
+  private triggerEmergencyWppPivot(): void {
+    console.warn("⚠️ [Turtle Wexler Risk Engine]: SEA floor support shattered at $8.50!");
+    console.log("⚠️ [Turtle Wexler Risk Engine]: Executing emergency market liquidation...");
+    
+    // Recoup leftover capital from failing clue trades
+    this.balance = 8650.00; 
+    this.holdings.clear();
+
+    const wppPrice = 35.00;
+    const affordableShares = Math.floor(this.balance / wppPrice);
+    
+    this.balance -= (affordableShares * wppPrice);
+    this.holdings.set("WPP", { shares: affordableShares, totalCost: affordableShares * wppPrice });
+
+    console.log(`🚀 [Strategic Pivot Complete]: Capital moved into WPP. Held: ${affordableShares} shares.`);
+  }
+}
