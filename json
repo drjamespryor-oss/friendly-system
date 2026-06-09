@@ -1,0 +1,32 @@
+{
+  "name": "westing-game-ticker-engine",
+  "version": "1.0.0",
+  "description": "Federated architecture stock engine simulating Turtle Wexler's ticker tape tracking and strategic portfolio re-allocation algorithms.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.js"
+  },
+  "keywords": [
+    "typescript",
+    "federated-architecture",
+    "command-pattern",
+    "immutable-state",
+    "ticker-tape",
+    "westing-game"
+  ],
+  "author": "Turtle Wexler & Flora Baumbach",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.24",
+    "jest": "^29.7.0",
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
+  }
+}
