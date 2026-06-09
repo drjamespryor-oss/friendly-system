@@ -1,0 +1,150 @@
+/**
+ * ============================================================================
+ * ARCHITECTURAL DESIGN PATTERN: IMMUTABLE STATE WITH RXJS EVENT EMITTER
+ * ============================================================================
+ * 
+ * This module couples a deeply-frozen Immutable State Container with a reactive
+ * Event Emitter subsystem. It ensures Turtle's historical trade history and portfolio
+ * matrices can never be mutated accidentally during multi-threaded streaming ticks.
+ */
+
+// Simple type-safe Observer definition matching standard pub/sub contracts
+type ObserverCallback<T> = (data: T) => void;
+
+// 1. Reactive Broadcast Hub (Event Emitter Subsystem)
+class PortfolioEventEmitter<T> {
+  private listeners: Map<string, ObserverCallback<T>[]> = new Map();
+
+  public subscribe(event: string, callback: ObserverCallback<T>): void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, []);
+    }
+    this.listeners.get(event)!.push(callback);
+  }
+
+  public emit(event: string, data: T): void {
+    const eventListeners = this.listeners.get(event);
+    if (eventListeners) {
+      eventListeners.forEach(callback => callback(data));
+    }
+  }
+}
+
+// 2. Structural Layout Shapes for the Immutable Matrix
+interface HoldingEntity {
+  readonly ticker: string;
+  readonly volume: number;
+  readonly valuation: number;
+}
+
+interface FinancialState {
+  readonly liquidCash: number;
+  readonly equityPositions: readonly HoldingEntity[];
+  readonly totalNetValue: number;
+}
+
+// 3. Main Immutable State Management Container
+class DeepFrozenStateStore {
+  private currentState: FinancialState;
+  private eventHub: PortfolioEventEmitter<FinancialState>;
+
+  constructor(initialState: FinancialState, emitter: PortfolioEventEmitter<FinancialState>) {
+    this.currentState = this.deepFreeze(initialState);
+    this.eventHub = emitter;
+  }
+
+  // Enforces complete structural immutability at compile and runtime
+  private deepFreeze<U extends object>(obj: U): U {
+    Object.freeze(obj);
+    Object.getOwnPropertyNames(obj).forEach(prop => {
+      const value = (obj as any)[prop];
+      if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
+        this.deepFreeze(value);
+      }
+    });
+    return obj;
+  }
+
+  public getState(): FinancialState {
+    return this.currentState;
+  }
+
+  /**
+   * State Mutation Hub: Generates a completely new frozen state snapshot using 
+   * predictable functional updates, then broadcasts it to streaming observers.
+   */
+  public dispatchTransition(action: (state: FinancialState) => FinancialState, eventContext: string): void {
+    const nextUnfrozenState = action(this.currentState);
+    this.currentState = this.deepFreeze(nextUnfrozenState);
+    this.eventHub.emit(eventContext, this.currentState);
+  }
+}
+
+// 4. Verification Harness Runner
+function runImmutableEventSimulation(): void {
+  console.log("=== Initializing Immutable Container & Event Streaming Hub ===\n");
+
+  const streamEmitter = new PortfolioEventEmitter<FinancialState>();
+  
+  const startingPoint: FinancialState = {
+    liquidCash: 10000.00,
+    equityPositions: [],
+    totalNetValue: 10000.00
+  };
+
+  const store = new DeepFrozenStateStore(startingPoint, streamEmitter);
+
+  // Hook up pipeline event listeners to log structural telemetry transitions
+  streamEmitter.subscribe("CLUE_TRADE_EXECUTION", (updatedState) => {
+    console.log(`📡 [Event Broadcast: CLUE_TRADE_EXECUTION]`);
+    console.log(` -> System Liquidity: $${updatedState.liquidCash.toFixed(2)} | Net Worth: $${updatedState.totalNetValue.toFixed(2)}`);
+  });
+
+  streamEmitter.subscribe("STRATEGIC_WPP_PIVOT", (updatedState) => {
+    console.log(`📡 [Event Broadcast: STRATEGIC_WPP_PIVOT]`);
+    console.log(` -> Ultimate Settlement Capitalized Valuation: $${updatedState.totalNetValue.toFixed(2)}`);
+    console.log(` -> Holdings Matrix Size: ${updatedState.equityPositions.length} active asset block`);
+  });
+
+  // Action Phase 1: Deploy early clue trades (Generates a distinct downstream snapshot)
+  store.dispatchTransition((oldState) => {
+    const newPositions: HoldingEntity[] = [
+      { ticker: "SEA", volume: 200, valuation: 1700.00 } // Dropped to $8.50 market valuation
+    ];
+    return {
+      liquidCash: 6950.00,
+      equityPositions: newPositions,
+      totalNetValue: 6950.00 + 1700.00 // $8650.00 recovered structural margin balance
+    };
+  }, "CLUE_TRADE_EXECUTION");
+
+  console.log("----------------------------------------------------------------------");
+
+  // Runtime Defensive Test: Confirm strict code freeze safety boundaries
+  try {
+    const reference = store.getState();
+    // Intentionally attempting to violate state layout rules directly at runtime
+    (reference as any).liquidCash = 999999.00;
+  } catch (error: any) {
+    console.log(`✅ Security Validation Secure: Engine successfully blocked side-effect mutation attempt.`);
+    console.log(` -> Core Reason: ${error.message}`);
+  }
+
+  console.log("----------------------------------------------------------------------");
+
+  // Action Phase 2: Execute Turtle Wexler's definitive macro trade pivot into WPP
+  store.dispatchTransition((_oldState) => {
+    const consolidatedPositions: HoldingEntity[] = [
+      { ticker: "WPP", volume: 200, valuation: 11575.00 } // Spiked to final book targets
+    ];
+    return {
+      liquidCash: 12.50,
+      equityPositions: consolidatedPositions,
+      totalNetValue: 12.50 + 11575.00 // $11,587.50 Final Matrix Record
+    };
+  }, "STRATEGIC_WPP_PIVOT");
+
+  console.log("\n======================================================================");
+}
+
+runImmutableEventSimulation();
