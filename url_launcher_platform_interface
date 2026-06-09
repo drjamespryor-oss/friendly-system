@@ -1,0 +1,81 @@
+/**
+ * ============================================================================
+ * ARCHITECTURE OVERVIEW: url_launcher IN THE WESTING GAME
+ * ============================================================================
+ * 
+ * [ url_launcher (App Facing API) ]
+ *                 |
+ * [ url_launcher_platform_interface ]
+ *                 |
+ * +---------------+---------------+---------------+---------------+
+ * |               |               |               |               |
+ * [Android]     [iOS]           [Web]       [Windows]       [Linux/macOS]
+ * (Java/Kotlin) (Swift/Obj-C)   (Dart/JS)   (C++ / C#)      (C++ / Swift)
+ * 
+ * Below is the complete TypeScript code combining the federated plugin architecture
+ * logic with Turtle Wexler and Flora Baumbach's ticker tape tracking data.
+ */
+
+// Define the structure of a Stock Trade from the ticker tape
+interface StockTrade {
+  symbol: string;
+  companyName: string;
+  sharesTraded: number;
+  pricePerShare: number;
+  getTotalValue(): number;
+}
+
+// Class to manage individual trade entries
+class TickerTapeTrade implements StockTrade {
+  constructor(
+    public symbol: string,
+    public companyName: string,
+    public sharesTraded: number,
+    public pricePerShare: number
+  ) {}
+
+  getTotalValue(): number {
+    return this.sharesTraded * this.pricePerShare;
+  }
+}
+
+// Main simulation class representing the Westing Game investment tracking
+class WestingInvestmentTracker {
+  private partner1: string = "Turtle Wexler";
+  private partner2: string = "Flora Baumbach";
+  private tickerTape: StockTrade[] = [];
+
+  constructor() {
+    this.initializeTickerTape();
+  }
+
+  // Populate the data directly from the book's 20th-century tape layout
+  private initializeTickerTape(): void {
+    this.tickerTape.push(new TickerTapeTrade("SEA", "Chrysler (Analogue)", 5, 8.50));
+    this.tickerTape.push(new TickerTapeTrade("GM", "General Motors", 5000, 67.00));
+    this.tickerTape.push(new TickerTapeTrade("LVI", "Leverage", 32, 4.00));
+    this.tickerTape.push(new TickerTapeTrade("MGC", "Magic", 2, 14.00));
+    this.tickerTape.push(new TickerTapeTrade("T", "AT&T", 1000, 65.25));
+    this.tickerTape.push(new TickerTapeTrade("AMI", "American Motors", 3, 19.25));
+    this.tickerTape.push(new TickerTapeTrade("I", "ITT", 8, 22.25));
+  }
+
+  // Simulates Turtle instructing Flora to write down the crossing prices
+  public trackInvestments(): void {
+    console.log(`=== Westing Game Investment Tracking ===`);
+    console.log(`Partners: ${this.partner1} & ${this.partner2}\n`);
+    console.log(`Turtle: "Never mind, just write down the prices of our stocks as they cross the tape like I'm doing..."\n`);
+    console.log(`[Flora begins logging the 20th-century telegraph ticker tape...]`);
+    console.log(`----------------------------------------------------------------------`);
+
+    this.tickerTape.forEach(trade => {
+      console.log(`Symbol: ${trade.symbol.padEnd(5)} | Co: ${trade.companyName.padEnd(22)} | Shares: ${trade.sharesTraded.toString().padStart(5)} | Price: $${trade.pricePerShare.toFixed(2).padStart(6)} | Total: $${trade.getTotalValue().toLocaleString().padStart(9)}`);
+    });
+    
+    console.log(`----------------------------------------------------------------------`);
+  }
+}
+
+// Execute the simulation
+const session = new WestingInvestmentTracker();
+session.trackInvestments();
