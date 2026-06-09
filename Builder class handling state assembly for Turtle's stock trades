@@ -1,0 +1,154 @@
+import { strict as assert } from 'assert';
+
+/**
+ * ============================================================================
+ * THE WESTING GAME: SIMULATING TURTLE WEXLER'S FINANCIAL TRANSACTION BUILDER
+ * ============================================================================
+ * 
+ * This engine compiles Turtle's raw financial transactions from the Westing House ticker 
+ * tape, builds validation models, and calculates structural execution steps for 
+ * her famous pivot into WPP (Westing Paper Products).
+ */
+
+// Define structural representation of a transaction raw state
+interface HistoricalRecord {
+  readonly timestamp: string;
+  readonly ticker: string;
+  readonly shareCount: number;
+  readonly executionPrice: number;
+}
+
+// Builder class handling state assembly for Turtle's stock trades
+class LedgerTransactionBuilder {
+  private timestamp!: string;
+  private ticker!: string;
+  private shares!: number;
+  private price!: number;
+
+  public setTimestamp(time: string): this {
+    this.timestamp = time;
+    return this;
+  }
+
+  public setTicker(symbol: string): this {
+    this.ticker = symbol.toUpperCase().trim();
+    return this;
+  }
+
+  public setVolume(quantity: number): this {
+    if (quantity <= 0) throw new Error("Volume cannot be zero or negative.");
+    this.shares = quantity;
+    return this;
+  }
+
+  public setMarketPrice(amount: number): this {
+    if (amount <= 0) throw new Error("Market pricing must be positive.");
+    this.price = amount;
+    return this;
+  }
+
+  // Validates current builder data properties before freezing structural object
+  public build(): HistoricalRecord {
+    if (!this.timestamp || !this.ticker || !this.shares || !this.price) {
+      throw new Error("Cannot assemble transaction ledger: incomplete payload properties.");
+    }
+
+    return {
+      timestamp: this.timestamp,
+      ticker: this.ticker,
+      shareCount: this.shares,
+      executionPrice: this.price
+    };
+  }
+}
+
+// Core execution tracking model reflecting Turtle Wexler's asset management
+class TurtleWexlerPortfolioTracker {
+  private initialCapital: number = 10000.00;
+  private liquidCash: number = 10000.00;
+  private ledgerArchive: HistoricalRecord[] = [];
+
+  // Registers a completed trade transaction onto the physical ledger
+  public executeOrder(record: HistoricalRecord, orderType: 'BUY' | 'SELL'): void {
+    const structuralCost = record.shareCount * record.executionPrice;
+
+    if (orderType === 'BUY') {
+      if (structuralCost > this.liquidCash) {
+        throw new Error(`Insufficient funds to purchase ${record.ticker}. Needed: $${structuralCost}`);
+      }
+      this.liquidCash -= structuralCost;
+    } else {
+      this.liquidCash += structuralCost;
+    }
+
+    this.ledgerArchive.push(record);
+  }
+
+  public getLiquidBalance(): number {
+    return this.liquidCash;
+  }
+
+  public getLedgerCount(): number {
+    return this.ledgerArchive.length;
+  }
+}
+
+// Production Test Runner Engine
+function runTurtleBuildPipeline() {
+  console.log("=== Initializing Turtle Wexler Transaction Engine ===\n");
+
+  const portfolio = new TurtleWexlerPortfolioTracker();
+  const builder = new LedgerTransactionBuilder();
+
+  // Test Step 1: Build & Execute Initial Clue Purchase (SEA Ticker / Chrysler Analogue)
+  try {
+    const seaPurchaseOrder = builder
+      .setTimestamp("Day 1 - Westing House")
+      .setTicker("SEA")
+      .setVolume(200)
+      .setMarketPrice(15.25)
+      .build();
+
+    portfolio.executeOrder(seaPurchaseOrder, 'BUY');
+    
+    // Verify math assertions
+    assert.equal(portfolio.getLedgerCount(), 1);
+    assert.equal(portfolio.getLiquidBalance(), 10000 - (200 * 15.25)); // 10000 - 3050 = 6950
+    console.log("✅ Step 1 Success: SEA position built, structurally verified, and added to ledger.");
+  } catch (err: any) {
+    console.error("❌ Step 1 Failure:", err.message);
+  }
+
+  // Test Step 2: Build & Execute Liquidating Order at Market Lows ($8.50)
+  try {
+    const seaLiquidatingOrder = builder
+      .setTimestamp("Day 5 - Ticker Tape Drop")
+      .setTicker("SEA")
+      .setVolume(200)
+      .setMarketPrice(8.50)
+      .build();
+
+    portfolio.executeOrder(seaLiquidatingOrder, 'SELL');
+
+    // Verify recovery cash calculation assert
+    assert.equal(portfolio.getLiquidBalance(), 6950 + (200 * 8.50)); // 6950 + 1700 = 8650
+    console.log("✅ Step 2 Success: SEA position liquidated at market price. Capital recovered.");
+  } catch (err: any) {
+    console.error("❌ Step 2 Failure:", err.message);
+  }
+
+  // Test Step 3: Enforce Builder validation boundaries (Handling invalid volume constraints)
+  try {
+    builder.setVolume(-50); // Intentionally bad asset configuration input
+    console.error("❌ Step 3 Failure: System permitted negative asset tracking quantities.");
+  } catch (err: any) {
+    assert.equal(err.message, "Volume cannot be zero or negative.");
+    console.log("✅ Step 3 Success: Builder correctly rejected structural boundary breach.");
+  }
+
+  console.log("\n----------------------------------------------------------------------");
+  console.log(`Current Working Settlement Liquidity: $${portfolio.getLiquidBalance().toFixed(2)}`);
+  console.log("======================================================================");
+}
+
+runTurtleBuildPipeline();
