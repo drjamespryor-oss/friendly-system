@@ -1,0 +1,54 @@
+# .github/workflows/ci-pipeline.yml
+name: Westing Engine CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: Enforce Code Styling Lints
+        run: npx tsc --noEmit
+
+      - name: Execute Jest Test Suites
+        run: npm test
+
+      - name: Build Production Assets
+        run: npm run build
+
+  containerize-and-publish:
+    needs: validate-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx Engine
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Validate Local Docker Image Container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: westing-game-ticker-engine:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
