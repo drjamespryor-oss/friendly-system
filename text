@@ -1,0 +1,24 @@
+.
+├── .github/
+│   └── workflows/
+│       └── ci-pipeline.yml            # Automated GitHub CI actions orchestration
+├── packages/
+│   ├── westing_ticker/
+│   │   ├── src/
+│   │   │   └── westing_ticker.ts      # App-facing client API layer (Turtle's Workspace)
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── westing_ticker_platform_interface/
+│   │   ├── src/
+│   │   │   └── platform_interface.ts  # Formal structural type enforcement blueprints
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   └── westing_ticker_mock_platform/
+│       ├── src/
+│       │   └── mock_platform.ts       # Specialized mock telemetry test rigs
+│       ├── package.json
+│       └── tsconfig.json
+├── Dockerfile                         # Hardened multi-stage container assembly rules
+├── package.json                       # Central development script controller node
+├── pnpm-workspace.yaml                # Multi-package dependency graph engine manager
+└── tsconfig.json                      # Strict global TypeScript root baseline layout
