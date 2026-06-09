@@ -1,0 +1,130 @@
+import { strict as assert } from 'assert';
+
+/**
+ * ============================================================================
+ * THE WESTING GAME: ADVANCED ARCHITECTURE PORTFOLIO BUILDER PIPELINE
+ * ============================================================================
+ * 
+ * This engine constructs Turtle's final multi-stage financial pivot. It automates 
+ * portfolio liquidation modeling, calculates maximum affordable share allocations 
+ * for Westing Paper Products (WPP), and validates final asset compounding metrics.
+ */
+
+interface AssetHolding {
+  ticker: string;
+  shares: number;
+  entryPrice: number;
+  currentPrice: number;
+}
+
+interface FinancialSnapshot {
+  liquidCash: number;
+  holdingsValue: number;
+  netWorth: number;
+  roiPercentage: number;
+}
+
+class AdvancedPortfolioBuilder {
+  private cashPool: number = 10000.00;
+  private structuralHoldings: Map<string, AssetHolding> = new Map();
+
+  // Seed initial clue-based positions that lose value
+  public seedInitialCluePositions(): this {
+    this.addPosition("SEA", 200, 15.25, 8.50);       // Clue: "Sea"
+    this.addPosition("MOUNTAIN", 100, 25.00, 19.00);  // Clue: "Mountain"
+    this.addPosition("AM", 150, 19.25, 15.00);        // Clue: "Am"
+    this.addPosition("O", 50, 30.00, 23.00);          // Clue: "O"
+    return this;
+  }
+
+  private addPosition(ticker: string, shares: number, entry: number, current: number): void {
+    const cost = shares * entry;
+    if (cost > this.cashPool) throw new Error(`Out of cash to build initial position: ${ticker}`);
+    
+    this.cashPool -= cost;
+    this.structuralHoldings.set(ticker, { ticker, shares, entryPrice: entry, currentPrice: current });
+  }
+
+  // Stage 1: Wipe the board clean by executing emergency sales on all failing positions
+  public executeEmergencyLiquidation(): this {
+    this.structuralHoldings.forEach((holding, ticker) => {
+      const recoveryValue = holding.shares * holding.currentPrice;
+      this.cashPool += recoveryValue;
+      this.structuralHoldings.delete(ticker);
+    });
+    return this;
+  }
+
+  // Stage 2: Re-allocate 100% of liquid assets into Westing Paper Products (WPP)
+  public executeWppStrategicPivot(wppEntryPrice: number, wppTargetPrice: number): this {
+    if (this.structuralHoldings.size > 0) {
+      throw new Error("Cannot pivot: Liquidate trailing historical baggage positions first.");
+    }
+
+    // Capital optimization loop - purchase maximum possible integer units
+    const maxSharesAffordable = Math.floor(this.cashPool / wppEntryPrice);
+    const purchaseCost = maxSharesAffordable * wppEntryPrice;
+
+    this.cashPool -= purchaseCost;
+    this.structuralHoldings.set("WPP", {
+      ticker: "WPP",
+      shares: maxSharesAffordable,
+      entryPrice: wppEntryPrice,
+      currentPrice: wppTargetPrice
+    });
+
+    return this;
+  }
+
+  // Stage 3: Synthesize state and build final immutably sealed evaluation snapshot
+  public compileSystemMetrics(): FinancialSnapshot {
+    let currentHoldingsMarketValue = 0;
+    
+    this.structuralHoldings.forEach(holding => {
+      currentHoldingsMarketValue += (holding.shares * holding.currentPrice);
+    });
+
+    const netWorth = this.cashPool + currentHoldingsMarketValue;
+    const initialStake = 10000.00;
+    const roiPercentage = ((netWorth - initialStake) / initialStake) * 100;
+
+    return {
+      liquidCash: parseFloat(this.cashPool.toFixed(2)),
+      holdingsValue: parseFloat(currentHoldingsMarketValue.toFixed(2)),
+      netWorth: parseFloat(netWorth.toFixed(2)),
+      roiPercentage: parseFloat(roiPercentage.toFixed(2))
+    };
+  }
+}
+
+// Pipeline Verification Harness
+function runAdvancedBuildPipeline() {
+  console.log("=== Launching Automated Multi-Stage Investment Pipeline ===\n");
+
+  const engine = new AdvancedPortfolioBuilder();
+
+  // Run build chain
+  const finalReport = engine
+    .seedInitialCluePositions()
+    .executeEmergencyLiquidation()
+    .executeWppStrategicPivot(35.00, 57.9375) // WPP spikes due to market manipulation chaos
+    .compileSystemMetrics();
+
+  // Structural Validation Assertions
+  try {
+    // Assert Turtle completely recovered from early $3,000 paper drops and hit net gains
+    assert.equal(finalReport.netWorth > 10000.00, true, "Execution pipeline failed to yield structural profitability.");
+    assert.equal(finalReport.netWorth, 11587.50, "Final tracking balance variation detected outside parameters.");
+    
+    console.log("✅ Pipeline Execution Verification Status: SECURE");
+    console.log(` -> Liquid Settlement Balance: $${finalReport.liquidCash.toFixed(2)}`);
+    console.log(` -> Open Portfolio Securities: $${finalReport.holdingsValue.toFixed(2)}`);
+    console.log(` -> Consolidated Total Worth : $${finalReport.netWorth.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`);
+    console.log(` -> Net Portfolio Growth Return : +${finalReport.roiPercentage}%`);
+    console.log("\n======================================================================");
+  } catch (err: any) {
+    console.error("❌ Pipeline Boundary Condition Fault:", err.message);
+  }
+}
+
+runAdvancedBuildPipeline();
