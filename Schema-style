@@ -1,0 +1,130 @@
+import { strict as assert } from 'assert';
+
+/**
+ * ============================================================================
+ * ARCHITECTURAL DESIGN PATTERN: DATA VALIDATION & PERSISTENCE ADAPTER LAYER
+ * ============================================================================
+ * 
+ * This module introduces a JSON Schema-style validation engine and a mock File
+ * System Persistence Adapter. It acts as the final setup layer to sanitize incoming
+ * ledger entries and securely serialize Turtle Wexler's asset blocks.
+ */
+
+// Define explicit dictionary types for parsing validation objects
+type PrimitiveValue = string | number | boolean | null;
+type ValidationTarget = Record<string, PrimitiveValue>;
+
+// Structural validation schemas to inspect payloads before state processing
+interface FieldSchema {
+  type: 'string' | 'number';
+  required: boolean;
+  min?: number;
+}
+
+const transactionSchema: Record<string, FieldSchema> = {
+  ticker: { type: 'string', required: true },
+  volume: { type: 'number', required: true, min: 1 },
+  marketPrice: { type: 'number', required: true, min: 0.01 }
+};
+
+// 1. JSON Schema-style Validation Engine
+class InputValidationEngine {
+  public static validate(data: ValidationTarget, schema: Record<string, FieldSchema>): boolean {
+    for (const key in schema) {
+      const rules = schema[key];
+      const value = data[key];
+
+      // Check required fields
+      if (rules.required && (value === undefined || value === null)) {
+        throw new Error(`Schema Violation: Missing required structural field "${key}".`);
+      }
+
+      if (value !== undefined && value !== null) {
+        // Verify type matching
+        if (typeof value !== rules.type) {
+          throw new Error(`Schema Type Error: Field "${key}" expected type "${rules.type}", but got "${typeof value}".`);
+        }
+
+        // Verify boundary ranges
+        if (rules.type === 'number' && rules.min !== undefined && (value as number) < rules.min) {
+          throw new Error(`Schema Boundary Error: Field "${key}" violates minimum range constraint of ${rules.min}.`);
+        }
+      }
+    }
+    return true;
+  }
+}
+
+// 2. Data Persistence Adapter (Simulated Disk Storage Layer)
+class LedgerPersistenceAdapter {
+  private diskStorage: Map<string, string> = new Map();
+
+  // Serializes and stores records using a mock partition write
+  public writeRecordToDisk(fileName: string, data: object): void {
+    const serializedPayload = JSON.stringify(data, null, 2);
+    this.diskStorage.set(fileName, serializedPayload);
+    console.log(`💾 [Disk IO]: Block successfully committed to Virtual Disk -> [${fileName}]`);
+  }
+
+  // Reads and deserializes data fragments back into code memory space
+  public readRecordFromDisk<T>(fileName: string): T {
+    if (!this.diskStorage.has(fileName)) {
+      throw new Error(`Disk IO Error: Requested reference file "${fileName}" could not be found.`);
+    }
+    return JSON.parse(this.diskStorage.get(fileName)!) as T;
+  }
+}
+
+// 3. Verification Test Harness Configuration
+function runSetupValidationPipeline(): void {
+  console.log("=== Initializing Validation Engine & Storage Adapters ===\n");
+
+  const database = new LedgerPersistenceAdapter();
+
+  // Test Case 1: Validate and commit a proper transaction payload (GM Trade Data)
+  const validTrade: ValidationTarget = {
+    ticker: "GM",
+    volume: 5000,
+    marketPrice: 67.00
+  };
+
+  try {
+    const isValid = InputValidationEngine.validate(validTrade, transactionSchema);
+    assert.equal(isValid, true);
+    console.log("✅ Sanitization Status: Data successfully passed schema requirements.");
+
+    // Commit memory layer block straight down onto disk space via the adapter
+    database.writeRecordToDisk("turtle_wexler_gm_ledger.json", validTrade);
+    
+    // Read transaction block back up to verify zero degradation across serialization paths
+    const recoveredData = database.readRecordFromDisk<typeof validTrade>("turtle_wexler_gm_ledger.json");
+    assert.equal(recoveredData.ticker, "GM");
+    assert.equal(recoveredData.volume, 5000);
+    console.log(` -> Verification Status: Secure. Recovered Ticker: [${recoveredData.ticker}] Volume: ${recoveredData.volume}`);
+  } catch (error: any) {
+    console.error("❌ Test Case 1 Failed:", error.message);
+  }
+
+  console.log("----------------------------------------------------------------------");
+
+  // Test Case 2: Enforce negative bounds check to trigger safety interception systems
+  const invalidTrade: ValidationTarget = {
+    ticker: "WPP",
+    volume: -10, // Invalid: Cannot hold negative stock volumes
+    marketPrice: 35.00
+  };
+
+  try {
+    InputValidationEngine.validate(invalidTrade, transactionSchema);
+    console.error("❌ Test Case 2 Failed: System accepted corrupted trading data.");
+  } catch (error: any) {
+    // Assert intercept logic successfully catches the boundary violation
+    assert.equal(error.message, 'Schema Boundary Error: Field "volume" violates minimum range constraint of 1.');
+    console.log("✅ Sanitization Status: Engine securely trapped invalid transaction arguments.");
+    console.log(` -> System Warning Log: "${error.message}"`);
+  }
+
+  console.log("\n======================================================================");
+}
+
+runSetupValidationPipeline();
